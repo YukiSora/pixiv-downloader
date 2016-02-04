@@ -42,8 +42,8 @@ def _getWorkList(data):
     return workList
 
 def _analysis(work):
-    if not work['work']['id'] in history:
-        history[work['work']['id']] = True
+    if not str(work['work']['id']) in history:
+        history[str(work['work']['id'])] = True
 
         return {
             'rank' : work['rank'],
