@@ -1,16 +1,11 @@
 # -*- coding: utf8 -*-
 import json
+import sqlite3
 import sys
 
 from webIO import *
 
-history = {}
-
-def rankDownloader(mode = 'daily', content = 'illust', date = '', n = 150):
-    global history
-    with open('history.json', 'r') as f:
-        history = json.loads(f.read())
-
+def rankDownloader(mode = 'daily', content = 'illust', date = '', n = 50):
     workList = []
     for p in range(1, int((n - 1) / 50) + 2):
         data = {
@@ -19,32 +14,13 @@ def rankDownloader(mode = 'daily', content = 'illust', date = '', n = 150):
             'date' : date,
             'p' : p
         }
-        workList += _getWorkList(data)
+        rank = getRank(data)
+        for work in rank['response'][0]['works']:
+            workList.append(_analysis(work))
 
-    with open('history.json', 'w') as f:
-        f.write(str(history))
-
-    return _download(workList[:n])
-
-def _getWorkList(data):
-    rank = getRank(data)
-
-    if rank['status'] != "success":
-        print('[error] Load rank filed.')
-        sys.exit(1)
-
-    workList = []
-    for work in rank['response'][0]['works']:
-        data = _analysis(work)
-        if data:
-            workList.append(data)
-
-    return workList
+    return _download(workList[:n], 'image/' + date + '/')
 
 def _analysis(work):
-    if not str(work['work']['id']) in history:
-        history[str(work['work']['id'])] = True
-
         return {
             'rank' : work['rank'],
             'work' : {
@@ -58,19 +34,26 @@ def _analysis(work):
                 'name' : work['work']['user']['name']
             }
         }
-    else :
-        return None
 
-def _download(workList):
+def _download(workList, path):
+    conn = sqlite3.connect('pixiv.db')
+    c = conn.cursor()
+
     count = 0
     for work in workList:
-        for i in range(work['work']['count']):
-            data = {
-                'url' : work['work']['url'].replace('p0', 'p' + str(i)),
-                'path' : 'image/' + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:],
-                'str' : str(work['rank']) + '. ' + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:]
-            }
-            downloadImage(data)
-            count += 1
+        c.execute("SELECT * FROM Record WHERE Work_ID = '%s'" % work['work']['id'])
+        if not c.fetchone():
+            for i in range(work['work']['count']):
+                data = {
+                    'url' : work['work']['url'].replace('p0', 'p' + str(i)),
+                    'path' : path + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:],
+                    'str' : str(work['rank']) + '. ' + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:]
+                }
+                downloadImage(data)
+                count += 1
+            c.execute("INSERT INTO Record VALUES ('%s', '%s')" % (work['work']['id'], work['user']['id']))
+
+    conn.commit()
+    conn.close()
 
     return count

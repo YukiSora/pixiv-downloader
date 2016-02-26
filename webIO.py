@@ -17,8 +17,6 @@ def initialization():
         'Content-Type': 'application/x-www-form-urlencoded'
     }
 
-    return
-
 def login():
     url = 'https://oauth.secure.pixiv.net/auth/token'
 
@@ -35,8 +33,6 @@ def login():
         'Authorization': 'Bearer ' + r.json()['response']['access_token'],
         'Cookie': 'PHPSESSID=' + r.cookies['PHPSESSID']
     })
-
-    return
 
 def getRank(data):
     url = 'https://public-api.secure.pixiv.net/v1/ranking/all'
@@ -73,13 +69,9 @@ def downloadImage(data):
         else:
             print('\033[31mfail\033[0m')
 
-    return
-
 def _processingBar(process, message):
     sys.stdout.write('\r%s: %3s%% %s%s ' % (message, str(process * 5), '\033[47m' + ' ' * process + '\033[0m', ' ' * (20 - process)))
     sys.stdout.flush()
-
-    return
 
 def _request(method, url, postdata = None, params = None, stream = False):
     if method == 'GET':
