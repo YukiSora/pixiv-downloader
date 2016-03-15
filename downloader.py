@@ -1,6 +1,5 @@
 # -*- coding: utf8 -*-
 import json
-import sqlite3
 import sys
 
 from webIO import *
@@ -36,24 +35,15 @@ def _analysis(work):
         }
 
 def _download(workList, path):
-    conn = sqlite3.connect('pixiv.db')
-    c = conn.cursor()
-
     count = 0
     for work in workList:
-        c.execute("SELECT * FROM Record WHERE Work_ID = '%s'" % work['work']['id'])
-        if not c.fetchone():
-            for i in range(work['work']['count']):
-                data = {
-                    'url' : work['work']['url'].replace('p0', 'p' + str(i)),
-                    'path' : path + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:],
-                    'str' : str(work['rank']) + '. ' + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:]
-                }
-                downloadImage(data)
-                count += 1
-            c.execute("INSERT INTO Record VALUES ('%s', '%s')" % (work['work']['id'], work['user']['id']))
-
-    conn.commit()
-    conn.close()
+        for i in range(work['work']['count']):
+            data = {
+                'url' : work['work']['url'].replace('p0', 'p' + str(i)),
+                'path' : path + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:],
+                'str' : str(work['rank']) + '. ' + str(work['work']['id']) + '_p' + str(i) + '.' + work['work']['url'][-3:]
+            }
+            downloadImage(data)
+            count += 1
 
     return count
